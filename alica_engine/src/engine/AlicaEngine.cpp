@@ -20,13 +20,14 @@
 #include "engine/teamobserver/TeamObserver.h"
 #include "engine/logging/Logger.h"
 #include "engine/roleassignment/RoleAssignment.h"
+#include "engine/staticroleassignment/StaticRoleAssignment.h"
 #include "engine/UtilityFunction.h"
 #include "engine/model/Plan.h"
 #include "engine/syncmodul/SyncModul.h"
 #include "engine/IConditionCreator.h"
 #include "engine/planselector/PartialAssignmentPool.h"
 #include "engine/expressionhandler/ExpressionHandler.h"
-#include "engine/constraintmodul/IConstraintSolver.h"
+#include <engine/constraintmodul/ISolver.h>
 #include "engine/constraintmodul/VariableSyncModule.h"
 #include "engine/collections/AssignmentCollection.h"
 
@@ -63,6 +64,7 @@ namespace alica
 		this->maySendMessages = false;
 		this->pap = nullptr;
 		this->variableSyncModule = nullptr;
+		this->useStaticRoles = false;
 
 #ifdef AE_DEBUG
 		cout << "AE: Constructor finished!" << endl;
@@ -83,13 +85,12 @@ namespace alica
 	 * @return bool true if everything worked false otherwise
 	 */
 	bool AlicaEngine::init(IBehaviourCreator* bc, IConditionCreator* cc, IUtilityCreator* uc, IConstraintCreator* crc,
-							string roleSetName, string masterPlanName, string roleSetDir,
-							bool stepEngine)
+							string roleSetName, string masterPlanName, string roleSetDir, bool stepEngine)
 	{
 		this->maySendMessages = !(*sc)["Alica"]->get<bool>("Alica.SilentStart", NULL);
+		this->useStaticRoles = (*sc)["Alica"]->get<bool>("Alica.UseStaticRoles", NULL);
 		AssignmentCollection::maxEpsCount = (*this->sc)["Alica"]->get<short>("Alica.MaxEpsPerPlan", NULL);
 		AssignmentCollection::allowIdling = (*this->sc)["Alica"]->get<bool>("Alica.AllowIdling", NULL);
-
 		this->terminating = false;
 		this->stepEngine = stepEngine;
 		if (this->planRepository == nullptr)
@@ -118,7 +119,16 @@ namespace alica
 		}
 		if (this->roleAssignment == nullptr)
 		{
-			this->roleAssignment = new RoleAssignment(this);
+			if (this->useStaticRoles)
+			{
+				this->roleAssignment = new StaticRoleAssignment(this);
+			}
+			else
+			{
+				this->roleAssignment = new RoleAssignment(this);
+			}
+			// the communicator is expected to be set before init() is called
+			this->roleAssignment->setCommunication(communicator);
 		}
 		if (this->syncModul == nullptr)
 		{
@@ -128,7 +138,6 @@ namespace alica
 		{
 			this->expressionHandler = new ExpressionHandler(this, cc, uc, crc);
 		}
-
 		this->stepCalled = false;
 		bool everythingWorked = true;
 		everythingWorked &= this->behaviourPool->init(bc);
@@ -144,7 +153,6 @@ namespace alica
 		{
 			this->planSelector = new PlanSelector(this, pap);
 		}
-
 		this->auth->init();
 		this->planBase = new PlanBase(this, this->masterPlan);
 		this->expressionHandler->attachAll();
@@ -254,7 +262,7 @@ namespace alica
 			delete this->variableSyncModule;
 			this->variableSyncModule = nullptr;
 		}
-		if(this->roleAssignment != nullptr)
+		if (this->roleAssignment != nullptr)
 		{
 			delete this->roleAssignment;
 			this->roleAssignment = nullptr;
@@ -455,7 +463,6 @@ namespace alica
 	void AlicaEngine::setCommunicator(IAlicaCommunication * communicator)
 	{
 		this->communicator = communicator;
-		//this->roleAssignment->setCommunication(communicator);
 	}
 
 	/**
@@ -474,12 +481,12 @@ namespace alica
 		return planBase;
 	}
 
-	void AlicaEngine::addSolver(int identifier, IConstraintSolver* solver)
+	void AlicaEngine::addSolver(int identifier, ISolver* solver)
 	{
 		this->solver[identifier] = solver;
 	}
 
-	IConstraintSolver* AlicaEngine::getSolver(int identifier)
+	ISolver* AlicaEngine::getSolver(int identifier)
 	{
 		return this->solver[identifier];
 	}

@@ -8,7 +8,6 @@
 #ifndef ALICAENGINE_H_
 #define ALICAENGINE_H_
 
-
 #include <string>
 #include <SystemConfig.h>
 #include <list>
@@ -39,17 +38,18 @@ namespace alica
 	class IUtilityCreator;
 	class ExpressionHandler;
 	class PartialAssignmentPool;
-	class IConstraintSolver;
+	class ISolver;
 	class IVariableSyncModule;
 
 	class AlicaEngine
 	{
 	public:
 		AlicaEngine();
-		bool init(IBehaviourCreator* bc, IConditionCreator* cc,  IUtilityCreator* uc, IConstraintCreator* crc, string roleSetName, string masterPlanName,
-													string roleSetDir, bool stepEngine);
+		bool init(IBehaviourCreator* bc, IConditionCreator* cc, IUtilityCreator* uc, IConstraintCreator* crc,
+					string roleSetName, string masterPlanName, string roleSetDir, bool stepEngine);
 		void shutdown();
-		void start();bool getStepEngine();
+		void start();
+		bool getStepEngine();
 		void abort(string msg);
 		template<typename T> void abort(string msg, const T tail);
 		PlanRepository* getPlanRepository();
@@ -66,7 +66,8 @@ namespace alica
 		void setAuth(AuthorityManager* auth);
 		IRoleAssignment* getRoleAssignment();
 		void setRoleAssignment(IRoleAssignment* roleAssignment);
-		IPlanParser* getPlanParser();bool isTerminating() const;
+		IPlanParser* getPlanParser();
+		bool isTerminating() const;
 		void setTerminating(bool terminating);
 		void setStepCalled(bool stepCalled);
 		bool getStepCalled() const;
@@ -83,8 +84,8 @@ namespace alica
 		PartialAssignmentPool* getPartialAssignmentPool();
 		void stepNotify();
 		PlanBase* getPlanBase();
-		void addSolver(int identifier, IConstraintSolver* solver);
-		IConstraintSolver* getSolver(int identifier);
+		void addSolver(int identifier, ISolver* solver);
+		ISolver* getSolver(int identifier);
 		IVariableSyncModule* getResultStore();
 		void setResultStore(IVariableSyncModule* resultStore);
 
@@ -111,8 +112,9 @@ namespace alica
 		IPlanner* planner;
 		IAlicaClock* alicaClock;
 		PartialAssignmentPool* pap;
-		PlanBase* planBase;bool stepCalled;
-		map<int, IConstraintSolver*> solver;
+		PlanBase* planBase;
+		bool stepCalled;
+		map<int, ISolver*> solver;
 		IVariableSyncModule* variableSyncModule;
 
 	private:
@@ -125,6 +127,12 @@ namespace alica
 		 * Indicates whether the engine is shutting down.
 		 */
 		bool terminating;
+
+		/**
+		 * Indicates whether the engine should run with a static role assignment
+		 * that is based on default roles, or not.
+		 */
+		bool useStaticRoles;
 		void setStepEngine(bool stepEngine);
 
 		PlanRepository* planRepository;
