@@ -375,11 +375,11 @@ namespace alica
 	{
 		this->ruleBook = ruleBook;
 	}
-	const ulong PlanBase::getloopInterval() const
+	const unsigned long PlanBase::getloopInterval() const
 	{
 		return this->loopInterval;
 	}
-	void PlanBase::setLoopInterval(ulong loopInterval)
+	void PlanBase::setLoopInterval(unsigned long loopInterval)
 	{
 		this->loopInterval = loopInterval;
 	}

@@ -56,8 +56,8 @@ namespace alica
 		const shared_ptr<RunningPlan> getRootNode() const;
 		void setRootNode(shared_ptr<RunningPlan> rootNode);
 		void setRuleBook(RuleBook* ruleBook);
-		const ulong getloopInterval() const;
-		void setLoopInterval(ulong loopInterval);
+		const unsigned long getloopInterval() const;
+		void setLoopInterval(unsigned long loopInterval);
 		void stop();
 		void start();
 		void addFastPathEvent(shared_ptr<RunningPlan> p);

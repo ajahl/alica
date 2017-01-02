@@ -37,7 +37,7 @@
 #include "engine/model/Parameter.h"
 
 #include "engine/AlicaEngine.h"
-#include "SigFault.h"
+//#include "SigFault.h"
 
 #include <iostream>
 
@@ -1707,7 +1707,7 @@ namespace alica
 			cout << "ELEMENT >" << ael->getName() << "< >" << this->elements[ael->getId()]->getName() << "<" << endl;
 			stringstream ss;
 			ss << "MF: ERROR Double IDs: " << ael->getId();
-			cout << segfaultdebug::get_stacktrace() << endl;
+//			cout << segfaultdebug::get_stacktrace() << endl;
 			ae->abort(ss.str());
 		}
 		elements.insert(pair<long, AlicaElement*>(ael->getId(), ael));
