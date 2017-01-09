@@ -290,7 +290,7 @@ namespace alica
 			if (this->callInit)
 				this->initInternal();
 #ifdef BEH_DEBUG
-			chrono::system_clock::time_point start = std::chrono::system_clock::now();
+			chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 #endif
 			// TODO: pass something like an eventarg (to be implemented) class-member, which could be set for an event triggered (to be implemented) behaviour.
 			try
@@ -313,7 +313,7 @@ namespace alica
 			BehaviourConfiguration* conf = dynamic_cast<BehaviourConfiguration*>(this->runningPlan->getPlan());
 			if (conf->isEventDriven())
 			{
-				double dura = (std::chrono::system_clock::now() - start).count() / 1000000.0
+				double dura = (std::chrono::high_resolution_clock::now() - start).count() / 1000000.0
 						- 1.0 / conf->getFrequency() * 1000.0;
 				if (dura > 0.1)
 				{
