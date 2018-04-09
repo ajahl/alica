@@ -42,9 +42,9 @@ namespace alica
 		public:
 			long id;
 			shared_ptr<vector<uint8_t>> val;
-			ulong lastUpdate;
+			unsigned long lastUpdate;
 
-			VarValue(long vid, shared_ptr<vector<uint8_t>> v, ulong now)
+			VarValue(long vid, shared_ptr<vector<uint8_t>> v, unsigned long now)
 			{
 				this->id = vid;
 				this->val = v;

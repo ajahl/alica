@@ -114,8 +114,8 @@ namespace alica
 		for (Plan* plan : plans)
 		{
 			// CHECK: number of robots < minimum cardinality of this plan
-			if (plan->getMinCardinality() > (robotIDs->size()
-					+ to->successesInPlan(plan)))
+			if (plan->getMinCardinality() >
+					(robotIDs->size() + to->successesInPlan(plan) ))
 			{
 #ifdef PSDEBUG
 				stringstream ss;

@@ -39,7 +39,7 @@ namespace alica
 	 * @param agentsInScope A shared_ptr<vector<int> >
 	 * @return shared_ptr<list<vector<Variable*> > >
 	 */
-	shared_ptr<list<vector<Variable*> > > ForallAgents::getSortedVariables(shared_ptr<RunningPlan>& p,
+	shared_ptr<list<vector<Variable*> > > ForallAgents::getDomainVariables(shared_ptr<RunningPlan>& p,
 																			shared_ptr<vector<int> >& agentsInScope)
 	{
 		if (this->isScopeIsPlan())
@@ -71,7 +71,7 @@ namespace alica
 			{
 				auto iter = this->getDomainIdentifiers().begin();
 				advance(iter, i);
-				terms[i] = re->getSortedVariable(*iter);
+				terms[i] = re->getDomainVariable(*iter);
 			}
 			ret->push_back(terms);
 		}

@@ -37,7 +37,7 @@
 #include "engine/model/Parameter.h"
 
 #include "engine/AlicaEngine.h"
-#include "SigFault.h"
+//#include "SigFault.h"
 
 #include <iostream>
 
@@ -665,9 +665,19 @@ namespace alica
 				}
 
 			}
+			else if (vars.compare(val) == 0)
+			{
+				Variable* var = createVariable(curChild);
+				pt->getVariables()->push_back(var);
+			}
+			else if (parametrisation.compare(val) == 0)
+			{
+				Parametrisation* para = createParametrisation(curChild);
+				pt->getParametrisation().push_back(para);
+			}
 			else
 			{
-				ae->abort("MF: Unhandled PlanType Child:", curChild);
+				ae->abort("MF: Unhandled PlanType Child:", val);
 			}
 			curChild = curChild->NextSiblingElement();
 		}
@@ -1321,7 +1331,7 @@ namespace alica
 			}
 			else
 			{
-				ae->abort("MF: Unhandled State Child: ", curChild->Value());
+				ae->abort("MF: Unhandled State Child: ", val);
 			}
 
 			curChild = curChild->NextSiblingElement();
@@ -1697,7 +1707,7 @@ namespace alica
 			cout << "ELEMENT >" << ael->getName() << "< >" << this->elements[ael->getId()]->getName() << "<" << endl;
 			stringstream ss;
 			ss << "MF: ERROR Double IDs: " << ael->getId();
-			cout << segfaultdebug::get_stacktrace() << endl;
+//			cout << segfaultdebug::get_stacktrace() << endl;
 			ae->abort(ss.str());
 		}
 		elements.insert(pair<long, AlicaElement*>(ael->getId(), ael));

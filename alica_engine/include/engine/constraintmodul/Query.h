@@ -8,6 +8,12 @@
 #ifndef CONSTRAINTQUERY_H_
 #define CONSTRAINTQUERY_H_
 
+#define Q_DEBUG
+
+#include <engine/constraintmodul/ConditionStore.h>
+#include <engine/constraintmodul/ISolver.h>
+#include <engine/constraintmodul/ProblemDescriptor.h>
+#include <engine/constraintmodul/ProblemPart.h>
 #include <memory>
 #include <vector>
 #include <map>
@@ -17,10 +23,6 @@
 #include "engine/IAlicaClock.h"
 #include "engine/ITeamObserver.h"
 #include "engine/RunningPlan.h"
-#include "engine/constraintmodul/ConstraintCall.h"
-#include "engine/constraintmodul/ConstraintDescriptor.h"
-#include "engine/constraintmodul/ConstraintStore.h"
-#include "engine/constraintmodul/IConstraintSolver.h"
 #include "engine/constraintmodul/IVariableSyncModule.h"
 #include "engine/constraintmodul/SolverTerm.h"
 #include "engine/constraintmodul/SolverVariable.h"
@@ -35,24 +37,63 @@ using namespace std;
 namespace alica
 {
 	class AlicaEngine;
-	class ConstraintCall;
+	class ProblemPart;
 	class ITeamObserver;
 	class RunningPlan;
 	class Variable;
 	class IAlicaClock;
 	class BasicBehaviour;
-	class IConstraintSolver;
+	class ISolver;
+
+	/**
+	 * Internal class to deal with bindings in states and plantypes
+	 */
+	class UniqueVarStore
+	{
+	public:
+		UniqueVarStore();
+
+		void clear();
+		void add(Variable* v);
+		Variable* getRep(Variable* v);
+		void addVarTo(Variable* representing, Variable* toAdd);
+		vector<Variable*> getAllRep();
+		int getIndexOf(Variable* v);
+		friend std::ostream& operator<<(std::ostream& os,const UniqueVarStore& store)
+		{
+			os << "UniqueVarStore: " << std::endl;
+			// write obj to stream
+			for (auto& variableList : store.store)
+			{
+				os << "VariableList: ";
+				for (auto& variable : variableList)
+				{
+					os << variable->getName() << "(" << variable->getId() << "), ";
+				}
+				os << std::endl;
+			}
+			return os;
+		}
+
+	private:
+		// TODO implement this store with a vector of lists, because a list is more efficient in this use case
+		/**
+		 *  Each inner list of variables is sorted from variables of the top most plan to variables of the deepest plan.
+		 *  Therefore, the first element is always the variable in the top most plan, where this variable occurs.
+		 */
+		vector<vector<Variable*>> store;
+	};
 
 	/**
 	 * Encapsulates queries to variables (which are associated with specific solvers).
 	 */
-	class ConstraintQuery : public enable_shared_from_this<ConstraintQuery>
+	class Query : public enable_shared_from_this<Query>
 	{
 	public:
-		ConstraintQuery(AlicaEngine* ae);
+		Query(AlicaEngine* ae);
 
-		void addVariable(Variable* v);
-		void addVariable(int robot, string ident);
+		void addStaticVariable(Variable* v);
+		void addDomainVariable(int robot, string ident);
 		void clearDomainVariables();
 		void clearStaticVariables();
 		bool existsSolution(int solverType, shared_ptr<RunningPlan> rp);
@@ -64,37 +105,21 @@ namespace alica
 		void setRelevantStaticVariables(vector<Variable*> value);
 		vector<Variable*> getRelevantDomainVariables();
 		void setRelevantDomainVariables(vector<Variable*> value);
-		void addConstraintCalls(vector<shared_ptr<ConstraintCall>>& l);
+		void addProblemParts(vector<shared_ptr<ProblemPart>>& l);
 
-		/**
-		 * Internal class to deal with bindings in states and plantypes
-		 */
-		class UniqueVarStore
-		{
-		public:
-			UniqueVarStore();
 
-			void clear();
-			void add(Variable* v);
-			Variable* getRep(Variable* v);
-			void addVarTo(Variable* representing, Variable* toAdd);
-			vector<Variable*> getAllRep();
-			int getIndexOf(Variable* v);
-			void sort();
 
-		private:
-			vector<vector<Variable*>> store;
-		};
+		shared_ptr<UniqueVarStore> getUniqueVariableStore();/*< for testing only!!! */
 
 	private:
-		bool collectProblemStatement(shared_ptr<RunningPlan> rp, IConstraintSolver* solver,
-										vector<shared_ptr<ConstraintDescriptor>>& cds,
+		bool collectProblemStatement(shared_ptr<RunningPlan> rp, ISolver* solver,
+										vector<shared_ptr<ProblemDescriptor>>& cds,
 										vector<Variable*>& relevantVariables, int& domOffset);
 
-		shared_ptr<UniqueVarStore> store;
+		shared_ptr<UniqueVarStore> uniqueVarStore;
 		vector<Variable*> queriedStaticVariables;
 		vector<Variable*> queriedDomainVariables;
-		vector<shared_ptr<ConstraintCall>> calls;
+		vector<shared_ptr<ProblemPart>> problemParts;
 
 		vector<Variable*> relevantStaticVariables;
 		vector<Variable*> relevantDomainVariables;
@@ -103,27 +128,41 @@ namespace alica
 	};
 
 	template<class T>
-	bool ConstraintQuery::getSolution(int solverType, shared_ptr<RunningPlan> rp, vector<T>& result)
+	bool Query::getSolution(int solverType, shared_ptr<RunningPlan> rp, vector<T>& result)
 	{
 		result.clear();
-		IConstraintSolver* solver = this->ae->getSolver(solverType);
 
-		vector<shared_ptr<ConstraintDescriptor>> cds = vector<shared_ptr<ConstraintDescriptor>>();
+		// Collect the complete problem specification
+		vector<shared_ptr<ProblemDescriptor>> cds;
 		vector<Variable*> relevantVariables;
 		int domOffset;
-		if (!collectProblemStatement(rp, solver, cds, relevantVariables, domOffset))
+		ISolver* solver = this->ae->getSolver(solverType);
+		if (solver == nullptr)
+			return false;
+
+		if (!this->collectProblemStatement(rp, solver, cds, relevantVariables, domOffset))
 		{
 			return false;
 		}
-		vector<void*> solverResult;
 
+#ifdef Q_DEBUG
+		std::cout << "Query: " << (*this->uniqueVarStore) << std::endl;
+//		std::cout << "Query: Relevant Variables: " << std::endl;
+//		for (auto variable : relevantVariables)
+//		{
+//			std::cout << variable->getName() << std::endl;
+//		}
+//		std::cout << std::endl;
+#endif
+
+		// the result of the solver (including all relevant variables)
+		vector<void*> solverResult;
+		// let the solver solve the problem
 		bool ret = solver->getSolution(relevantVariables, cds, solverResult);
 
-		//Create result filtered by the queried variables
+
 		if (solverResult.size() > 0)
 		{
-			result.clear();
-
 			// currently only synch variables if the result/their value is a double
 			if (typeid(T) == typeid(double) && ret)
 			{
@@ -143,10 +182,10 @@ namespace alica
 				}
 			}
 
-			//throw "Unexpected Result in Multiple Variables Query!";
-			for (int i = 0; i < queriedStaticVariables.size(); ++i)
+			// create a result vector that is filtered by the queried variables
+			for (auto& staticVariable : queriedStaticVariables)
 			{
-				result.push_back(*((T*)solverResult.at(store->getIndexOf(queriedStaticVariables[i]))));
+				result.push_back(*((T*)solverResult.at(uniqueVarStore->getIndexOf(staticVariable))));
 			}
 
 			for (int i = 0; i < queriedDomainVariables.size(); ++i)
@@ -161,6 +200,8 @@ namespace alica
 				}
 			}
 		}
+
+		// deallocate "solverResults" (they where copied into "result")
 		for (int i = 0; i < solverResult.size(); i++)
 		{
 			delete (T*)solverResult.at(i);
@@ -169,7 +210,10 @@ namespace alica
 		return ret;
 	}
 
-}
-/* namespace alica */
+
+
+}/* namespace alica */
+
+
 
 #endif /* CONSTRAINTQUERY_H_ */

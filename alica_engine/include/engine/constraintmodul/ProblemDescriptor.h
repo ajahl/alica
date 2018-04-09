@@ -1,12 +1,12 @@
 /*
- * ConstraintDescriptor.h
+ * ProblemDescriptor.h
  *
  *  Created on: Sep 30, 2014
  *      Author: Philipp Sperber
  */
 
-#ifndef CONSTRAINTDESCRIPTOR_H_
-#define CONSTRAINTDESCRIPTOR_H_
+#ifndef PROBLEMDESCRIPTOR_H_
+#define PROBLEMDESCRIPTOR_H_
 
 #include <memory>
 #include <vector>
@@ -18,38 +18,15 @@ namespace alica
 	class SolverTerm;
 	class SolverVariable;
 
-	class ConstraintDescriptor : public enable_shared_from_this<ConstraintDescriptor>
+	class ProblemDescriptor : public enable_shared_from_this<ProblemDescriptor>
 	{
-	private:
-		int dim;
-		const double min = -10E29;
-		const double max = 10E29;
-
-		double utilitySignificanceThreshold = 1E-22;
-		bool setsUtilitySignificanceThreshold;
-
-// TODO:		map<int, object> fixedValues;
-
-		shared_ptr<SolverTerm> constraint;
-		shared_ptr<SolverTerm> utility;
-		double utilitySufficiencyThreshold;
-		shared_ptr<vector<shared_ptr<SolverVariable>>> staticVars;
-		shared_ptr<vector<shared_ptr<vector<shared_ptr<vector<shared_ptr<SolverVariable>>>>> >> domainVars;
-		shared_ptr<vector<shared_ptr<vector<int>>>> agentsInScope;
-		shared_ptr<vector<shared_ptr<SolverVariable>>> allVars;
-
-		shared_ptr<vector<vector<vector<vector<double>>>>> domainRanges;
-		shared_ptr<vector<vector<double>>> staticRanges;
-
 	public:
-		ConstraintDescriptor(shared_ptr<vector<shared_ptr<SolverVariable>>> vars, shared_ptr<vector<shared_ptr<vector<shared_ptr<vector<shared_ptr<SolverVariable>>>>> >> domVars);
+		ProblemDescriptor(shared_ptr<vector<shared_ptr<SolverVariable>>> vars, shared_ptr<vector<shared_ptr<vector<shared_ptr<vector<shared_ptr<SolverVariable>>>>> >> domVars);
 
 		bool getSetsUtilitySignificanceThreshold();
 		void setSetsUtilitySignificanceThreshold(bool value);
 		double getUtilitySignificanceThreshold();
 		void setUtilitySignificanceThreshold(double value);
-//		void setFixedValue(shared_ptr<SolverTerm> SolverVariable, object value);
-//		object getFixedValue(shared_ptr<SolverTerm> SolverVariable);
 		shared_ptr<SolverTerm> getConstraint();
 		void setConstraint(shared_ptr<SolverTerm> value);
 		shared_ptr<SolverTerm> getUtility();
@@ -71,8 +48,27 @@ namespace alica
 		void setDomainRanges(shared_ptr<vector<vector<vector<vector<double>>>>> value);
 		shared_ptr<vector<vector<double>>> getStaticRanges();
 		void setStaticRanges(shared_ptr<vector<vector<double>>> value);
+
+	private:
+		int dim;
+		const double min = -10E29;
+		const double max = 10E29;
+
+		double utilitySignificanceThreshold = 1E-22; /*<< minimum delta for adapting a better utility */
+		bool setsUtilitySignificanceThreshold;
+
+		shared_ptr<SolverTerm> constraint;
+		shared_ptr<SolverTerm> utility;
+		double utilitySufficiencyThreshold;
+		shared_ptr<vector<shared_ptr<SolverVariable>>> staticVars;
+		shared_ptr<vector<shared_ptr<vector<shared_ptr<vector<shared_ptr<SolverVariable>>>>> >> domainVars;
+		shared_ptr<vector<shared_ptr<vector<int>>>> agentsInScope;
+		shared_ptr<vector<shared_ptr<SolverVariable>>> allVars;
+
+		shared_ptr<vector<vector<vector<vector<double>>>>> domainRanges;
+		shared_ptr<vector<vector<double>>> staticRanges;
 	};
 
 } /* namespace Alica */
 
-#endif /* CONSTRAINTDESCRIPTOR_H_ */
+#endif /* PROBLEMDESCRIPTOR_H_ */
